@@ -1,0 +1,12 @@
+body{
+    background-image: url(../dotgrid.svg);
+    background-repeat: repeat;
+    background-size: 100%;
+    background-color: #FBFBFB;
+    }
+
+.drawing-area{
+    height: 500px;
+    border-style: solid;
+    padding: 0;
+}
