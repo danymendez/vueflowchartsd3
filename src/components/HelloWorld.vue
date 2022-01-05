@@ -46,10 +46,11 @@
                 console.log('x: ' + event.pageX);
                 console.log('y: ' + event.pageY);
 
-                this.data.push({ x: (event.pageX - svgBoundClientRect.x), y: (event.pageY - svgBoundClientRect.y) });
+                this.data.push({ x: (event.pageX - svgBoundClientRect.x), y: (event.pageY - svgBoundClientRect.y), w: 100, h:40 });
                 this.addRect();
             },
             addRect() {
+
                 let _this = this;
                 d3.selectAll("g").remove();
                 _this.g = _this.svg.append("g").attr("cursor", "grab");
@@ -58,8 +59,8 @@
                     .join("rect")
                     .attr("x", ({ x }) => x)
                     .attr("y", ({ y }) => y)
-                    .attr('width', 40)
-                    .attr('height', 40)
+                    .attr('width', ({ w }) => w)
+                    .attr('height', ({ h }) => h)
                     .attr('stroke', 'black')
                     .attr('fill', '#69a3b2')
                     .call(d3.drag()
@@ -73,6 +74,8 @@
                         .on("end", function () {
                             _this.g.attr("cursor", "grab");
                         }));
+
+
                 _this.svg.call(d3.zoom()
                     .extent([[0, 0], [document.getElementById("zoom").offsetWidth, document.getElementById("zoom").offsetHeight]])
                     .scaleExtent([1, 8])
