@@ -3,8 +3,87 @@
     <div class="row">
       <div class="col-sm-3">
         <div class="card">
-          <div class="card-body" draggable="true">
-            This is some text within a card body.
+          <div class="card-body">
+            <div class="list-group list-group-library-task p-2">
+              <div
+                href="#!"
+                s=""
+              
+                class="
+                  list-group-item
+                  list-group-item-action
+                  list-group-item-border-top
+                  p-0
+                  mb-3
+                ">
+                 <div
+                 draggable="true"
+                  @dragstart="dragstart" 
+                  class="
+                    d-flex
+            
+                    justify-content-between
+                    align-items-center
+                    draggable
+                    rounded
+                  "
+                >
+                  <small class="d-flex align-items-start align-items-center"
+                    ><i
+                      aria-hidden="true"
+                      class="fas fa-chart-line text-success fa-2x mr-2"
+                    ></i>
+                    <b> Demand Forecast</b></small
+                  >
+                  <small
+                    ><i aria-hidden="true" class="task-icon-dragdrop"></i
+                  ></small>
+                </div>
+                <p class="bg-light-library-task pb-2 mb-0">
+                  <small class="text-muted">Some placeholder content in a paragraph.</small
+                  >
+                </p>
+                </div>
+              <div
+                href="#"
+                s=""
+          
+                class="
+                  list-group-item
+                  list-group-item-action
+                  list-group-item-border-top
+                  p-0
+                  mb-3
+                "
+            
+                ><div
+                  draggable="true"
+                   @dragstart="dragstart" 
+                  class="
+                    d-flex
+                
+                    justify-content-between
+                    align-items-center
+                    draggable
+                    rounded
+                  "
+                >
+                  <small class="d-flex align-items-start align-items-center"
+                    ><i
+                      aria-hidden="true"
+                      class="fas fa-history text-primary fa-2x mr-2"
+                    ></i>
+                    <b> Demand Forecast Conversion</b></small
+                  >
+                  <small
+                    ><i aria-hidden="true" class="task-icon-dragdrop"></i
+                  ></small>
+                </div>
+                <p class="bg-light-library-task pb-2 mb-0">
+                  <small class="text-muted"
+                    >Some placeholder content in a paragraph.</small>
+                </p></div>
+            </div>
           </div>
         </div>
         Data Array
@@ -35,7 +114,7 @@
         @dragover.prevent
         @dragenter.prevent
       ></div>
-      <div class="col-sm-2">
+      <div class="col-sm-2" >
         <div class="form-group">
           <label>x</label>
           <input v-model="x" type="text" class="form-control" />
@@ -64,6 +143,10 @@
           <label>lvl</label>
           <input v-model="lvl" type="text" class="form-control" />
         </div>
+        <div class="form-group">
+          <label>html</label>
+          <input v-model="html" type="text" class="form-control" />
+        </div>
       </div>
       <div class="col-sm-1">
         <button type="button" v-on:click="addLine">Add Line</button>
@@ -88,12 +171,19 @@ export default {
       itemData: "",
       x: 40,
       y: 40,
-      w: 100,
-      h: 30,
+      w: 150,
+      h: 50,
       id: 1,
       parent: 0,
       lvl: 0,
       arrayData: "",
+      html:`<div draggable="true" class="d-flex justify-content-between align-items-center draggable rounded">
+      <small class="d-flex align-items-start align-items-center">
+      <i aria-hidden="true" class="fas fa-history text-primary fa-2x mr-2"></i>
+      <b> Demand Forecast Conversion</b></small><small><i aria-hidden="true" class="task-icon-dragdrop"></i>
+      </small>
+      </div>`,
+      areaDrag:Object
     };
   },
   props: {
@@ -104,10 +194,51 @@ export default {
       this.data = [];
       this.dataline = [];
     },
+    getIdAreaDragging(x,y){
+      let parents = this.data.filter((item) => item.parent === 0);
+      let id =0;
+      for(var i=0;i<parents.length;i++){
+      let index = this.data.findIndex((item) => item.id == parents[i].id);
+      let object =this.data[index];
+      if(x>object.areaDrag.x && x<object.x+object.w && y>object.areaDrag.y && y<object.areaDrag.y+object.areaDrag.h){
+        id= object.id;
+        break;
+      }
+      }
+      return id;
+    },
+    setDragginArea(){
+      let parents = this.data.filter((item) => item.parent === 0);
+      for(var i=0;i<parents.length;i++){
+       let index = this.data.findIndex((item) => item.id == parents[i].id);
+      this.data[index].areaDrag = this.getAreaDragging(this.data[index].x,this.data[index].y,this.data[index].w,50);
+      }
+    },
+    getAreaDragging(x,y,w,h){
+      return {
+        x:x,
+        y:y+h,
+        w:w,
+        h:h
+      };
+    },
+    dragstart(event){
+      console.log(event.target.innerHTML);
+      this.addData({
+        x: 40,
+        y: 40,
+        w: 150,
+        h: 50,
+        id: this.data.length+1,
+        parent: 0,
+        lvl: 0,
+        html: event.target.outerHTML,
+      });
+    },
     getMBottonC(x, y, w, h) {
       return {
         x: x + w / 2,
-        y: y - h,
+        y: y + h,
       };
     },
     getMTopC(x, y, w) {
@@ -125,6 +256,7 @@ export default {
         id: Number(this.id),
         parent: Number(this.parent),
         lvl: Number(this.lvl),
+        html: this.html,
       });
       this.arrayData = JSON.stringify(this.data);
     },
@@ -137,14 +269,15 @@ export default {
         id: dataObject.id,
         parent: dataObject.parent,
         lvl: dataObject.lvl,
+        html:dataObject.html
       });
     },
     drawLine() {
       for (var i = 0; i < this.dataline.length; i++) {
         this.g
           .append("line")
-          .style("stroke", "lightgreen")
-          .style("stroke-width", 10)
+          .style("stroke", "black")
+          .style("stroke-width", 3)
           .attr("x1", this.dataline[i].x1)
           .attr("y1", this.dataline[i].y1)
           .attr("x2", this.dataline[i].x2)
@@ -158,24 +291,25 @@ export default {
       this.addRect();
     },
     resetSVGArea() {
-      d3.selectAll("rect").remove();
-      d3.selectAll("line").remove();
+      this.g.selectAll("foreignObject").remove();
+       this.g.selectAll("line").remove();
+        this.g.selectAll("rect").remove();
+  
       this.resetDataFromParent();
+      this.setDragginArea();
     },
     addRect() {
       this.resetSVGArea();
       let _this = this;
-      _this.g = _this.svg.append("g").attr("cursor", "grab");
+ 
       _this.g
-        .selectAll("rect")
+        .selectAll("foreignObject")
         .data(_this.data)
-        .join("rect")
+        .join("foreignObject")
         .attr("x", ({ x }) => x)
         .attr("y", ({ y }) => y)
         .attr("width", ({ w }) => w)
         .attr("height", ({ h }) => h)
-        .attr("stroke", "black")
-        .attr("fill", "#69a3b2")
         .call(
           d3
             .drag()
@@ -191,15 +325,42 @@ export default {
                 d3.select(this)
                   .attr("x", (d.x = event.x))
                   .attr("y", (d.y = event.y));
-
+                //  console.log(event.x);
+                   console.log(event.y);
+                  let id=_this.getIdAreaDragging(d.x,d.y);
+                 if(id>0 && !_this.hasChildren(d)){
+                    let parent = _this.data.filter((item) => item.id == id);
+                      let bottoMiddle = _this.getMBottonC(parent[0].x,parent[0].y,parent[0].w,parent[0].h);
+                   _this.addCircle(bottoMiddle.x,bottoMiddle.y);
+                 }else{
+                 
+                   _this.g.selectAll("circle").remove();
+                 }
                 _this.addRect();
               }
             })
-            .on("end", function () {
+            .on("end", function (_,d) {
+            
+              d.parent=_this.getIdAreaDragging(d.x,d.y);
               _this.g.attr("cursor", "grab");
+               _this.g.selectAll("circle").remove();
+               _this.addRect();
+               //--- llamado al API
             })
-        );
+        )
+        .append("xhtml:a")
+        .attr("class", "list-group-item list-group-item-action list-group-item-border-top")
+        .html(({ html }) => html);
       this.drawLine();
+    },
+    addCircle(x,y)
+    {
+      this.g.append('circle')
+        .attr('cx', x)
+        .attr('cy', y)
+        .attr('r', 5)
+        .attr('stroke', 'black')
+        .attr('fill', '#69a3b2');
     },
     resetDataFromParent() {
       //let _this = this;
@@ -209,15 +370,14 @@ export default {
       let yBetweenDistance = 60;
       for (var i = 0; i < parents.length; i++) {
         if (this.hasChildren(parents[i])) {
-
           let children = this.getChildren(parents[i]);
           let xFirstChildren =
             parents[i].x +
             parents[i].w / 2 -
             this.getTotalWidthChildren(children, xBetweenDistance) / 2;
           let yFirstChildren = parents[i].y + parents[i].h + yBetweenDistance;
-            
-            //Horizontal between parents and children
+
+          //Horizontal between parents and children
           this.addDataLine(
             xFirstChildren + parents[i].w / 2,
             yFirstChildren - yBetweenDistance / 2,
@@ -226,18 +386,19 @@ export default {
               this.getTotalWidthChildren(children, xBetweenDistance),
             yFirstChildren - yBetweenDistance / 2
           );
-
-        // var gMParent = this.getMBottonC 
-         this.addDataLine(
-            xFirstChildren + parents[i].w / 2,
-            yFirstChildren - yBetweenDistance / 2,
-            xFirstChildren -
-              parents[i].w / 2 +
-              this.getTotalWidthChildren(children, xBetweenDistance),
-            yFirstChildren - yBetweenDistance / 2
+          
+          //Vertical line
+           var gMBottonCParent = this.getMBottonC(parents[i].x,parents[i].y,parents[i].w,parents[i].h);
+          this.addDataLine(
+           gMBottonCParent.x,
+            gMBottonCParent.y,
+            gMBottonCParent.x,
+            (gMBottonCParent.y+ yBetweenDistance/2)
           );
 
           for (var j = 0; j < children.length; j++) {
+           
+
             if (j == 0) {
               this.setChildrenCordenate(
                 children[j],
@@ -251,6 +412,13 @@ export default {
                 children[j - 1].y
               );
             }
+             var gMTopCChild = this.getMTopC(children[j].x,children[j].y,children[j].w,children[j].h);
+                      this.addDataLine(
+                      gMTopCChild.x,
+                        gMTopCChild.y,
+                        gMTopCChild.x,
+                        (gMTopCChild.y- yBetweenDistance/2)
+                      );
           }
         }
       }
@@ -287,6 +455,8 @@ export default {
           document.getElementById(divID).offsetWidth,
           document.getElementById(divID).offsetHeight,
         ]);
+
+        _this.g = _this.svg.append("g").attr("cursor", "grab");
     },
     addZoom() {
       let _this = this;
@@ -300,7 +470,7 @@ export default {
               document.getElementById("zoom").offsetHeight,
             ],
           ])
-          .scaleExtent([1, 8])
+          .scaleExtent([0.7, 8])
           .on("zoom", function ({ transform }) {
             _this.g.attr("transform", transform);
           })
@@ -316,7 +486,7 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
+<style>
 h3 {
   margin: 40px 0 0;
 }
@@ -329,6 +499,18 @@ ul {
 li {
   display: inline-block;
   margin: 0 10px;
+}
+
+.list-group-item-border-top{
+width: inherit;
+height: inherit;
+padding: 5px;
+}
+
+.list-group-item-border-top:nth-child(){
+  width: inherit;
+  height: inherit;
+  padding: 0 !important;
 }
 
 a {
