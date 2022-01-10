@@ -18,7 +18,7 @@
               >
                 <div
                   draggable="true"
-                  @dragstart="dragstart"
+                  @dragstart="dragstartTask"
                   class="
                     d-flex
                     justify-content-between
@@ -57,7 +57,7 @@
               >
                 <div
                   draggable="true"
-                  @dragstart="dragstart"
+                  @dragstart="dragstartTask"
                   class="
                     d-flex
                     justify-content-between
@@ -150,7 +150,7 @@
       </div>
       <div class="col-sm-1">
         <button type="button" v-on:click="addLine">Add Line</button>
-        <button type="button" v-on:click="addRect">Draw me/Reset</button>
+        <button type="button" v-on:click="addRects">Draw me/Reset</button>
         <button type="button" v-on:click="addToData">Add data</button>
       </div> -->
     </div>
@@ -169,13 +169,6 @@ export default {
       data: Object,
       dataline: Object,
       itemData: "",
-      x: 40,
-      y: 40,
-      w: 150,
-      h: 50,
-      id: 1,
-      parent: 0,
-      lvl: 0,
       arrayData: "",
       html: `<div draggable="true" class="d-flex justify-content-between align-items-center draggable rounded">
       <small class="d-flex align-items-start align-items-center">
@@ -183,6 +176,8 @@ export default {
       <b> Demand Forecast Conversion</b></small><small><i aria-hidden="true" class="task-icon-dragdrop"></i>
       </small>
       </div>`,
+      isDraggin: Boolean,
+      eventDragingTask: Object,
       areaDrag: Object,
     };
   },
@@ -193,18 +188,23 @@ export default {
     init() {
       this.data = [];
       this.dataline = [];
+      this.isDraggin = false;
     },
-    getIdAreaDragging(x, y) {
+    getIdAreaDragging(rectAxisData) {
       let parents = this.data.filter((item) => item.parent === 0);
       let id = 0;
       for (var i = 0; i < parents.length; i++) {
         let index = this.data.findIndex((item) => item.id == parents[i].id);
         let object = this.data[index];
         if (
-          x > object.areaDrag.x &&
-          x < object.x + object.w &&
-          y > object.areaDrag.y &&
-          y < object.areaDrag.y + object.areaDrag.h
+          ((rectAxisData.a.x > object.areaDrag.a.x &&
+            rectAxisData.a.x < object.areaDrag.b.x2) ||
+            (rectAxisData.b.x2 > object.areaDrag.a.x &&
+              rectAxisData.b.x2 < object.areaDrag.b.x2)) &&
+          ((rectAxisData.a.y < object.areaDrag.c.y2 &&
+            rectAxisData.a.y > object.areaDrag.a.y) ||
+            (rectAxisData.b.y < object.areaDrag.c.y2 &&
+              rectAxisData.b.y > object.areaDrag.a.y))
         ) {
           id = object.id;
           break;
@@ -212,25 +212,18 @@ export default {
       }
       return id;
     },
-    setDragginArea() {
+    setDraggingArea() {
       let parents = this.data.filter((item) => item.parent === 0);
+      let h = 50;
       for (var i = 0; i < parents.length; i++) {
         let index = this.data.findIndex((item) => item.id == parents[i].id);
-        this.data[index].areaDrag = this.getAreaDragging(
-          this.data[index].x,
-          this.data[index].y,
+        this.data[index].areaDrag = this.getRectAxis(
+          this.data[index].rectAxisData.c.x,
+          this.data[index].rectAxisData.c.y2,
           this.data[index].w,
-          50
+          h
         );
       }
-    },
-    getAreaDragging(x, y, w, h) {
-      return {
-        x: x,
-        y: y + h,
-        w: w,
-        h: h,
-      };
     },
     polarToCartesian(r, theta) {
       return {
@@ -263,26 +256,30 @@ export default {
           x2: x + w,
           y2: y + h,
         },
-        top:{
-          x:x+w/2,
-          y:y
+        top: {
+          x: x + w / 2,
+          y: y,
         },
-        botton:{
-          x:x+w/2,
-          y:y+h
+        botton: {
+          x: x + w / 2,
+          y: y + h,
         },
         midsegment: {
           x: x + w / 2,
-          y: y + h / 2
+          y: y + h / 2,
         },
-        polar:_this.cartesianToPolar(x,y)
+        polar: _this.cartesianToPolar(x, y),
       };
     },
-    dragstart(event) {
-     let axis = this.setRectAxisFromTop(100,100,150,50);
+    dragstartTask(event) {
+      //event.preventDefault();
+
+      this.isDraggin = true;
+
+      this.html = event.target.outerHTML;
       this.addData({
-        x: axis.a.x,
-        y: axis.a.y,
+        x: 50,
+        y: 50,
         w: 150,
         h: 50,
         id: this.data.length + 1,
@@ -290,67 +287,46 @@ export default {
         lvl: 0,
         html: event.target.outerHTML,
       });
+
+
     },
-    getMBottonC(x, y, w, h) {
+    getDistanceSourceTarget(source, target) {
+      return Math.sqrt(
+        Math.pow(target.x2 + source.x1, 2) + Math.pow(target.y2 + source.y1, 2)
+      );
+    },
+    setRectAxisFromTop(x, y, w, h) {
+      let _this = this;
       return {
-        x: x + w / 2,
-        y: y + h,
-      };
-    },
-    getMTopC(x, y, w) {
-      return {
-        x: x + w / 2,
-        y: y,
-      };
-    },
-    addToData() {
-      this.data.push({
-        x: Number(this.x),
-        y: Number(this.y),
-        w: Number(this.w),
-        h: Number(this.h),
-        id: Number(this.id),
-        parent: Number(this.parent),
-        lvl: Number(this.lvl),
-        html: this.html,
-      });
-      this.arrayData = JSON.stringify(this.data);
-    },
-    getDistanceSourceTarget(source,target){
-      return Math.sqrt(Math.pow(target.x2+source.x1,2)+Math.pow(target.y2+source.y1,2));
-    },
-    setRectAxisFromTop(x,y,w,h){
-        let _this=this;
-        return {
         a: {
-          x: x-(w/2),
+          x: x - w / 2,
           y: y,
         },
         b: {
-          x2: x + (w/2),
+          x2: x + w / 2,
           y: y,
         },
         c: {
-          x: x-(w/2),
+          x: x - w / 2,
           y2: y + h,
         },
         d: {
-          x2: x + (w/2),
+          x2: x + w / 2,
           y2: y + h,
         },
-        top:{
-          x:x,
-          y:y
+        top: {
+          x: x,
+          y: y,
         },
-        botton:{
-          x:x-w/2,
-          y:y+h
+        botton: {
+          x: x - w / 2,
+          y: y + h,
         },
         midsegment: {
           x: x,
-          y: y + h / 2
+          y: y + h / 2,
         },
-        polar:_this.cartesianToPolar(x,y)
+        polar: _this.cartesianToPolar(x, y),
       };
     },
     addData(dataObject) {
@@ -364,7 +340,12 @@ export default {
         parent: dataObject.parent,
         lvl: dataObject.lvl,
         html: dataObject.html,
-        rectAxisData: _this.getRectAxis(dataObject.x,dataObject.y,dataObject.w,dataObject.h),
+        rectAxisData: _this.getRectAxis(
+          dataObject.x,
+          dataObject.y,
+          dataObject.w,
+          dataObject.h
+        ),
       });
     },
     drawLine() {
@@ -373,27 +354,27 @@ export default {
           .append("line")
           .style("stroke", "black")
           .style("stroke-width", 3)
-          .attr("x1", this.dataline[i].x1)
-          .attr("y1", this.dataline[i].y1)
-          .attr("x2", this.dataline[i].x2)
-          .attr("y2", this.dataline[i].y2);
+          .attr("x1", this.dataline[i].source.x)
+          .attr("y1", this.dataline[i].source.y)
+          .attr("x2", this.dataline[i].target.x)
+          .attr("y2", this.dataline[i].target.y);
       }
     },
-    addDataLine(x1, y1, x2, y2) {
-      this.dataline.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
+    addDataLine(object) {
+      this.dataline.push({ source: object.source, target: object.target });
     },
     drop() {
-      this.addRect();
+      this.addRects();
     },
     resetSVGArea() {
       this.g.selectAll("foreignObject").remove();
       this.g.selectAll("line").remove();
       this.g.selectAll("rect").remove();
 
-      this.resetDataFromParent();
-      this.setDragginArea();
+      this.recalCoordinatesChildren();
+      this.setDraggingArea();
     },
-    addRect() {
+    addRects() {
       this.resetSVGArea();
       let _this = this;
 
@@ -424,7 +405,7 @@ export default {
           "list-group-item list-group-item-action list-group-item-border-top"
         )
         .html(({ html }) => html);
-      this.drawLine();
+      _this.drawLine();
     },
     addCircle(x, y) {
       this.g
@@ -435,87 +416,107 @@ export default {
         .attr("stroke", "black")
         .attr("fill", "#69a3b2");
     },
-    resetDataFromParent() {
+    recalCoordinatesChildren() {
       //let _this = this;
       this.dataline = [];
       let parents = this.data.filter((item) => item.parent === 0);
-      let xBetweenDistance = 40;
+      let xBetweenDistance = 30;
       let yBetweenDistance = 60;
       for (var i = 0; i < parents.length; i++) {
         if (this.hasChildren(parents[i])) {
           let children = this.getChildren(parents[i]);
-          let xFirstChildren =
-            parents[i].x +
-            parents[i].w / 2 -
-            this.getTotalWidthChildren(children, xBetweenDistance) / 2;
-          let yFirstChildren = parents[i].y + parents[i].h + yBetweenDistance;
+          let w_totalWidthChildren = this.getTotalWidthChildren(
+            children,
+            xBetweenDistance
+          );
+          let h_MaxChild = this.getMaxHeightChildren(children);
+          let horizontalLineData = this.setRectAxisFromTop(
+            parents[i].rectAxisData.botton.x,
+            parents[i].rectAxisData.botton.y + yBetweenDistance / 2,
+            w_totalWidthChildren,
+            h_MaxChild
+          );
 
           //Horizontal between parents and children
-          this.addDataLine(
-            xFirstChildren + parents[i].w / 2,
-            yFirstChildren - yBetweenDistance / 2,
-            xFirstChildren -
-              parents[i].w / 2 +
-              this.getTotalWidthChildren(children, xBetweenDistance),
-            yFirstChildren - yBetweenDistance / 2
-          );
+          if (children.length > 1) {
+            this.addDataLine({
+              source: {
+                x: horizontalLineData.a.x + children[0].w / 2,
+                y: horizontalLineData.a.y,
+              },
+              target: {
+                x:
+                  horizontalLineData.b.x2 - children[children.length - 1].w / 2,
+                y: horizontalLineData.b.y,
+              },
+            });
+          }
 
-          //Vertical line
-          var gMBottonCParent = this.getMBottonC(
-            parents[i].x,
-            parents[i].y,
-            parents[i].w,
-            parents[i].h
-          );
-          this.addDataLine(
-            gMBottonCParent.x,
-            gMBottonCParent.y,
-            gMBottonCParent.x,
-            gMBottonCParent.y + yBetweenDistance / 2
-          );
+          //Vertical Line
+          this.addDataLine({
+            source: {
+              x: parents[i].rectAxisData.botton.x,
+              y: parents[i].rectAxisData.botton.y,
+            },
+            target: {
+              x: horizontalLineData.top.x,
+              y: horizontalLineData.top.y,
+            },
+          });
 
           for (var j = 0; j < children.length; j++) {
             if (j == 0) {
-              this.setChildrenCordenate(
+              this.setChildrenCoordinates(
                 children[j],
-                xFirstChildren,
-                yFirstChildren
+                horizontalLineData.a.x,
+                horizontalLineData.a.y + yBetweenDistance / 2
               );
             } else {
-              this.setChildrenCordenate(
+              this.setChildrenCoordinates(
                 children[j],
                 children[j - 1].x + children[j - 1].w + xBetweenDistance,
                 children[j - 1].y
               );
             }
-            var gMTopCChild = this.getMTopC(
-              children[j].x,
-              children[j].y,
-              children[j].w,
-              children[j].h
-            );
-            this.addDataLine(
-              gMTopCChild.x,
-              gMTopCChild.y,
-              gMTopCChild.x,
-              gMTopCChild.y - yBetweenDistance / 2
-            );
+
+            this.addDataLine({
+              source: {
+                x: children[j].rectAxisData.top.x,
+                y: children[j].rectAxisData.top.y,
+              },
+              target: {
+                x: children[j].rectAxisData.top.x,
+                y: horizontalLineData.top.y,
+              },
+            });
           }
         }
       }
       this.arrayData = JSON.stringify(this.data);
     },
-    setChildrenCordenate(child, x, y) {
+    setChildrenCoordinates(child, x, y) {
       let index = this.data.findIndex((item) => item.id == child.id);
       console.log(index);
       this.data[index].x = x;
       this.data[index].y = y;
+      this.data[index].rectAxisData = this.getRectAxis(
+        this.data[index].x,
+        this.data[index].y,
+        this.data[index].w,
+        this.data[index].y
+      );
     },
     getTotalWidthChildren(array, xBetweenDistance) {
       let wTotal = d3.sum(array, function (d) {
         return d.w;
       });
       return wTotal + xBetweenDistance * (array.length - 1);
+    },
+    getMaxHeightChildren(array) {
+      let hMax = d3.max(array, function (d) {
+        return d.h;
+      });
+      return hMax;
     },
     getChildren(parent) {
       let children = this.data.filter((item) => item.parent == parent.id);
@@ -530,6 +531,7 @@ export default {
       _this.svg = d3
         .select(`#${divID}`)
         .append("svg")
+        .attr("id", `${divID}SVG`)
         .attr("viewBox", [
           0,
           0,
@@ -542,7 +544,7 @@ export default {
     gDragStart(_thisDrag, d) {
       let _this = this;
       _this.itemData = JSON.stringify(d);
-      let id = _this.getIdAreaDragging(d.x, d.y);
+      let id = _this.getIdAreaDragging(d.rectAxisData);
       if (!_this.hasChildren(d)) {
         d.parent = id;
       }
@@ -556,31 +558,28 @@ export default {
       d3.select(_thisDrag)
         .attr("x", (d.x = event.x))
         .attr("y", (d.y = event.y));
-      let id = _this.getIdAreaDragging(d.x, d.y);
-      d.rectAxisData = _this.getRectAxis(d.x,d.y,d.w,d.h);
+      d.rectAxisData = _this.getRectAxis(d.x, d.y, d.w, d.h);
+      let id = _this.getIdAreaDragging(d.rectAxisData);
       if (id > 0 && !_this.hasChildren(d)) {
         let parent = _this.data.filter((item) => item.id == id);
-        let bottoMiddle = _this.getMBottonC(
-          parent[0].x,
-          parent[0].y,
-          parent[0].w,
-          parent[0].h
+        _this.addRects();
+        _this.addCircle(
+          parent[0].rectAxisData.botton.x,
+          parent[0].rectAxisData.botton.y
         );
-        _this.addRect();
-        _this.addCircle(bottoMiddle.x, bottoMiddle.y);
       } else {
         _this.g.selectAll("circle").remove();
-        _this.addRect();
+        _this.addRects();
       }
     },
     gDragEnd(_, d) {
       let _this = this;
       if (!_this.hasChildren(d)) {
-        d.parent = _this.getIdAreaDragging(d.x, d.y);
+        d.parent = _this.getIdAreaDragging(d.rectAxisData);
       }
       _this.g.attr("cursor", "grab");
       _this.g.selectAll("circle").remove();
-      _this.addRect();
+      _this.addRects();
       //--- llamado al API
     },
     addZoom() {
@@ -606,7 +605,6 @@ export default {
     this.init();
     this.createSVGArea();
     this.addZoom();
-
   },
 };
 </script>
