@@ -27,16 +27,16 @@
                     rounded
                   "
                 >
-                  <small class="d-flex align-items-start align-items-center"
-                    ><i
+                  <small class="d-flex align-items-start align-items-center">
+                    <i
                       aria-hidden="true"
                       class="fas fa-chart-line text-success fa-2x mr-2"
                     ></i>
-                    <b> Demand Forecast</b></small
-                  >
-                  <small
-                    ><i aria-hidden="true" class="task-icon-dragdrop"></i
-                  ></small>
+                    <b> Demand Forecast</b>
+                  </small>
+                  <small>
+                    <i aria-hidden="true" class="task-icon-dragdrop"></i>
+                  </small>
                 </div>
                 <p class="bg-light-library-task pb-2 mb-0">
                   <small class="text-muted"
@@ -66,16 +66,16 @@
                     rounded
                   "
                 >
-                  <small class="d-flex align-items-start align-items-center"
-                    ><i
+                  <small class="d-flex align-items-start align-items-center">
+                    <i
                       aria-hidden="true"
                       class="fas fa-history text-primary fa-2x mr-2"
                     ></i>
-                    <b> Demand Forecast Conversion</b></small
+                    <b>Demand Forecast Conversion</b></small
                   >
-                  <small
-                    ><i aria-hidden="true" class="task-icon-dragdrop"></i
-                  ></small>
+                  <small>
+                    <i aria-hidden="true" class="task-icon-dragdrop"></i>
+                  </small>
                 </div>
                 <p class="bg-light-library-task pb-2 mb-0">
                   <small class="text-muted"
@@ -86,82 +86,66 @@
             </div>
           </div>
         </div>
-        Data Array
-        <textarea
-          name=""
-          id=""
-          cols="30"
-          rows="5"
-          v-model="arrayData"
-          readonly
-        ></textarea>
-        <br />
-        item Array
-        <textarea
-          name=""
-          id=""
-          cols="30"
-          rows="5"
-          v-model="itemData"
-          readonly
-        ></textarea>
+        <div>
+          <label>Data Array</label>
+          <textarea
+            name=""
+            id=""
+            cols="30"
+            rows="5"
+            v-model="arrayData"
+            readonly
+          ></textarea>
+          <br />
+          <label>item Array</label>
+          <textarea
+            name=""
+            id=""
+            cols="30"
+            rows="5"
+            v-model="itemData"
+            readonly
+          ></textarea>
+          <br />
+        </div>
       </div>
-
       <div
         id="zoom"
         class="col-sm-9 drawing-area"
         @drop="drop($event)"
         @dragover.prevent
         @dragenter.prevent
-      ></div>
-      <!-- <div class="col-sm-2" >
-        <div class="form-group">
-          <label>x</label>
-          <input v-model="x" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>y</label>
-          <input v-model="y" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>w</label>
-          <input v-model="w" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>h</label>
-          <input v-model="h" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>id</label>
-          <input v-model="id" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>parent</label>
-          <input v-model="parent" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>lvl</label>
-          <input v-model="lvl" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>html</label>
-          <input v-model="html" type="text" class="form-control" />
-        </div>
+      >
+        <svg id="zoomSVG">
+          <g cursor="grab">
+            <foreignObject
+              v-for="p in data"
+              :key="p.id"
+              v-bind:id="p.id"
+              v-bind:x="p.x"
+              v-bind:y="p.y"
+              v-bind:width="p.w"
+              v-bind:height="p.h"
+            >
+              <Task :name="p.id" />
+              <!--
+                    @drag="gDragging($event)" @dragstart="gDragStart($event)" @dragend="gDragEnd($event)"
+                  -->
+            </foreignObject>
+          </g>
+        </svg>
       </div>
-      <div class="col-sm-1">
-        <button type="button" v-on:click="addLine">Add Line</button>
-        <button type="button" v-on:click="addRects">Draw me/Reset</button>
-        <button type="button" v-on:click="addToData">Add data</button>
-      </div> -->
     </div>
   </div>
 </template>
 
 <script>
 import * as d3 from "d3";
+import Task from "./ASI-Task.vue";
 
 export default {
   name: "HelloWorld",
+  components: { Task },
   data() {
     return {
       svg: Object,
@@ -170,12 +154,6 @@ export default {
       dataline: Object,
       itemData: "",
       arrayData: "",
-      html: `<div draggable="true" class="d-flex justify-content-between align-items-center draggable rounded">
-      <small class="d-flex align-items-start align-items-center">
-      <i aria-hidden="true" class="fas fa-history text-primary fa-2x mr-2"></i>
-      <b> Demand Forecast Conversion</b></small><small><i aria-hidden="true" class="task-icon-dragdrop"></i>
-      </small>
-      </div>`,
       isDraggin: Boolean,
       eventDragingTask: Object,
       areaDrag: Object,
@@ -271,24 +249,8 @@ export default {
         polar: _this.cartesianToPolar(x, y),
       };
     },
-    dragstartTask(event) {
-      //event.preventDefault();
-
+    dragstartTask() {
       this.isDraggin = true;
-
-      this.html = event.target.outerHTML;
-      this.addData({
-        x: 50,
-        y: 50,
-        w: 150,
-        h: 50,
-        id: this.data.length + 1,
-        parent: 0,
-        lvl: 0,
-        html: event.target.outerHTML,
-      });
-
-
     },
     getDistanceSourceTarget(source, target) {
       return Math.sqrt(
@@ -338,8 +300,6 @@ export default {
         h: dataObject.h,
         id: dataObject.id,
         parent: dataObject.parent,
-        lvl: dataObject.lvl,
-        html: dataObject.html,
         rectAxisData: _this.getRectAxis(
           dataObject.x,
           dataObject.y,
@@ -364,12 +324,21 @@ export default {
       this.dataline.push({ source: object.source, target: object.target });
     },
     drop() {
+      let _this = this;
+      this.addData({
+        id: _this.data.length + 1,
+        x: 50,
+        y: 50,
+        w: 150,
+        h: 50,
+        parent: 0,
+      });
+      this.setDraggingArea();
       this.addRects();
     },
     resetSVGArea() {
-      this.g.selectAll("foreignObject").remove();
+
       this.g.selectAll("line").remove();
-      this.g.selectAll("rect").remove();
 
       this.recalCoordinatesChildren();
       this.setDraggingArea();
@@ -377,7 +346,6 @@ export default {
     addRects() {
       this.resetSVGArea();
       let _this = this;
-
       _this.g
         .selectAll("foreignObject")
         .data(_this.data)
@@ -398,13 +366,7 @@ export default {
             .on("end", function (_, d) {
               _this.gDragEnd(this, d);
             })
-        )
-        .append("xhtml:a")
-        .attr(
-          "class",
-          "list-group-item list-group-item-action list-group-item-border-top"
-        )
-        .html(({ html }) => html);
+        );
       _this.drawLine();
     },
     addCircle(x, y) {
@@ -528,10 +490,9 @@ export default {
     createSVGArea() {
       let _this = this;
       let divID = "zoom";
+
       _this.svg = d3
-        .select(`#${divID}`)
-        .append("svg")
-        .attr("id", `${divID}SVG`)
+        .select("svg")
         .attr("viewBox", [
           0,
           0,
@@ -539,7 +500,7 @@ export default {
           document.getElementById(divID).offsetHeight,
         ]);
 
-      _this.g = _this.svg.append("g").attr("cursor", "grab");
+      _this.g = d3.select("g");
     },
     gDragStart(_thisDrag, d) {
       let _this = this;
@@ -548,7 +509,7 @@ export default {
       if (!_this.hasChildren(d)) {
         d.parent = id;
       }
-      d3.select(_thisDrag).raise();
+      // d3.select(_thisDrag).raise();
       d3.select(_thisDrag).attr("stroke", "red");
       _this.g.attr("cursor", "grabbing");
     },
